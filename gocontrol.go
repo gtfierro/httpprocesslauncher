@@ -7,15 +7,16 @@ controller will start or stop accordingly.
 package main
 
 import (
+	"encoding/json"
+	"github.com/julienschmidt/httprouter"
+	"io/ioutil"
+	"log"
+	"net/http"
 	"os"
 	"os/exec"
-	"net/http"
-	"log"
 	"path/filepath"
-	"github.com/julienschmidt/httprouter"
-	"encoding/json"
 	"strings"
-	"io/ioutil"
+	"time"
 )
 
 var processes = make(map[string]*exec.Cmd)
@@ -29,7 +30,7 @@ func getValidControllers() []string {
 }
 
 func runController(ini string) {
-	cmd := exec.Command("twistd","-n","smap",ini)
+	cmd := exec.Command("twistd", "-n", "smap", ini)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	processes[ini] = cmd
@@ -43,8 +44,8 @@ func runController(ini string) {
 
 func List(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	defer r.Body.Close()
-	w.Header().Set("Content-Type","application/json; charset=utf-8")
-	w.Header().Set("Access-Control-Allow-Origin","*")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	fixlist := []string{}
 	for _, controller := range getValidControllers() {
 		tmp := strings.Split(controller[3:], ".")
@@ -57,23 +58,27 @@ func List(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 func Run(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	defer r.Body.Close()
-	w.Header().Set("Content-Type","application/json; charset=utf-8")
-	w.Header().Set("Access-Control-Allow-Origin","*")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	byte_choice, _ := ioutil.ReadAll(r.Body)
 	choice := string(byte_choice)
 	log.Printf("Starting %v", choice)
-	go runController("zc/"+choice+".ini")
+	go runController("zc/" + choice + ".ini")
 }
 
 func Kill(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	defer r.Body.Close()
-	w.Header().Set("Content-Type","application/json; charset=utf-8")
-	w.Header().Set("Access-Control-Allow-Origin","*")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	byte_choice, _ := ioutil.ReadAll(r.Body)
-	choice := "zc/"+string(byte_choice)+".ini"
+	choice := "zc/" + string(byte_choice) + ".ini"
 	if cmd, found := processes[choice]; found {
 		log.Printf("Stopping %v", choice)
 		cmd.Process.Signal(os.Interrupt)
+		time.Sleep(1 * time.Second)
+		if !cmd.ProcessState.Exited() {
+			cmd.Process.Kill()
+		}
 		delete(processes, choice)
 	} else {
 		log.Fatal("no found", choice)
@@ -82,10 +87,11 @@ func Kill(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 
 func Status(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	defer r.Body.Close()
-	w.Header().Set("Content-Type","application/json; charset=utf-8")
-	w.Header().Set("Access-Control-Allow-Origin","*")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	tmp_choice := p.ByName("pname")
-	choice := "zc/"+tmp_choice+".ini"
+	choice := "zc/" + tmp_choice + ".ini"
+	log.Println(choice)
 	_, found := processes[choice]
 	bytes, _ := json.Marshal(map[string]bool{"alive": found})
 	w.WriteHeader(200)
@@ -94,6 +100,10 @@ func Status(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 
 func Home(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	http.ServeFile(w, r, "index.html")
+}
+
+func Static(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	http.ServeFile(w, r, r.URL.Path[1:])
 }
 
 func main() {
@@ -109,5 +119,6 @@ func main() {
 	router.POST("/kill", Kill)
 	router.GET("/status/:pname", Status)
 	router.GET("/", Home)
+	router.GET("/build/*file", Static)
 	log.Fatal(http.ListenAndServe(":8000", router))
 }
