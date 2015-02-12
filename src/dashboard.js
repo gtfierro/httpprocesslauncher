@@ -42,7 +42,8 @@ var Process = React.createClass({
         var onActive = this.state.on;
         return (
             <div className="process">
-                <p>{this.props.name}</p>
+                <h2>{this.props.name}</h2>
+                <p><b>Running?  </b>{this.state.on ? 'YES' : 'no'}</p>
                 <ButtonToolbar>
                     <Button bsStyle="success" 
                             active={onActive} 
@@ -58,6 +59,7 @@ var Process = React.createClass({
                     {this.state.loading ? 'Loading...' : 'Off'}
                     </Button>
                 </ButtonToolbar>
+
             </div>
         );
     }

@@ -42,7 +42,8 @@ var Process = React.createClass({displayName: "Process",
         var onActive = this.state.on;
         return (
             React.createElement("div", {className: "process"}, 
-                React.createElement("p", null, this.props.name), 
+                React.createElement("h2", null, this.props.name), 
+                React.createElement("p", null, React.createElement("b", null, "Running?  "), this.state.on ? 'YES' : 'no'), 
                 React.createElement(ButtonToolbar, null, 
                     React.createElement(Button, {bsStyle: "success", 
                             active: onActive, 
@@ -58,6 +59,7 @@ var Process = React.createClass({displayName: "Process",
                     this.state.loading ? 'Loading...' : 'Off'
                     )
                 )
+
             )
         );
     }
