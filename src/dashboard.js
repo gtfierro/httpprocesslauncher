@@ -1,4 +1,4 @@
-var queryURL = "http://localhost:8000"
+var queryURL = "http://10.4.10.127:8000"
 
 var ProcessList = React.createClass({
     render: function() {
