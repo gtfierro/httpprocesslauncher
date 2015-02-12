@@ -77,6 +77,7 @@ func Kill(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		cmd.Process.Signal(os.Interrupt)
 		time.Sleep(1 * time.Second)
 		if !cmd.ProcessState.Exited() {
+			log.Println("killing")
 			cmd.Process.Kill()
 		}
 		delete(processes, choice)
@@ -91,7 +92,6 @@ func Status(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	tmp_choice := p.ByName("pname")
 	choice := "zc/" + tmp_choice + ".ini"
-	log.Println(choice)
 	_, found := processes[choice]
 	bytes, _ := json.Marshal(map[string]bool{"alive": found})
 	w.WriteHeader(200)

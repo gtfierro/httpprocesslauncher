@@ -21,21 +21,38 @@ var Process = React.createClass({
     },
     handleClick: function(e) {
         var isOnReq = e.target.getAttribute('data-buttontype') == 'on';
-        var postURL = isOnReq ? queryURL+'/kill' : queryURL+'/run'
+        var postURL = isOnReq ? queryURL+'/run' : queryURL+'/kill'
+		console.log("post %v", postURL)
         var postData = this.props.name;
         $.ajax({
-            url: queryURL+'/run',
+            url: postURL,
             dataType: 'json',
             type: 'POST',
             data: postData,
             success: function(data) {
-                this.setSTate({on: isOnReq});
+                this.setState({on: isOnReq});
             }.bind(this),
             error: function(xhr, status, err) {
                 console.log(postURL, status, err.toString());
             }.bind(this)
         });
     },
+	getStatus: function() {
+		$.ajax({
+			url: queryURL+'/status/'+this.props.name,
+			dataType: 'json',
+			type:'GET',
+			success: function(data) {
+				this.setState({on: data.alive});
+			}.bind(this),
+			error: function(xhr, status, err) {
+				console.error(queryURL, status, err.toString());
+			}.bind(this)
+		});
+	},
+	componentDidMount: function() {
+		setInterval(this.getStatus, 1000);
+	},
     render: function() {
         var Button = ReactBootstrap.Button;
         var ButtonToolbar = ReactBootstrap.ButtonToolbar;
